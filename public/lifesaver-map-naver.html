@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>인명구조함 지도 (네이버)</title>
-  <script type="text/javascript" src="https://openapi.naver.com/openapi/v3/maps.js?ncpClientId=y6akfogygp"></script>
+  <title>인명구조함 지도 (네이버 앱용)</title>
+  <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=y6akfogygp"></script>
   <style>
     html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
     #locationButton, #mapTypeSelector, #sosButton {
@@ -34,9 +34,8 @@
 <button id="sosButton">🚨 구조 요청</button>
 
 <script>
-  // 네이버 지도 객체 생성
   var map = new naver.maps.Map('map', {
-    center: new naver.maps.LatLng(37.5665, 126.9780), // 서울 좌표
+    center: new naver.maps.LatLng(37.5665, 126.9780),
     zoom: 17,
     mapTypeId: naver.maps.MapTypeId.NORMAL
   });
@@ -49,7 +48,6 @@
   var watchId = null;
   var infoWindow = new naver.maps.InfoWindow();
 
-  // 위치 추적 시작
   function startTracking() {
     let hasCenteredOnce = false;
 
@@ -87,7 +85,6 @@
     }
   }
 
-  // 구조함 마커 로드
   function loadMarkers() {
     fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
       .then(function(response) { return response.json(); })
@@ -140,7 +137,6 @@
       });
   }
 
-  // 지도에 마커 업데이트
   function updateMarkers() {
     if (lifesavers.length === 0) return;
 
@@ -164,7 +160,6 @@
   startTracking();
   loadMarkers();
 
-  // 내 위치로 이동 버튼 클릭 이벤트
   document.getElementById('locationButton').addEventListener('click', function() {
     if (myLat && myLon) {
       const center = new naver.maps.LatLng(myLat, myLon);
@@ -173,7 +168,6 @@
     }
   });
 
-  // 지도 타입 변경 버튼 클릭 이벤트
   document.getElementById('mapTypeSelector').addEventListener('click', function() {
     if (map.getMapTypeId() === naver.maps.MapTypeId.SATELLITE) {
       map.setMapTypeId(naver.maps.MapTypeId.NORMAL);
@@ -184,7 +178,6 @@
     }
   });
 
-  // 🚨 구조 요청 버튼 기능
   document.getElementById('sosButton').addEventListener('click', function() {
     if (myLat && myLon) {
       const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
