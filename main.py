@@ -10,7 +10,7 @@ app = FastAPI()
 # 정적 파일 서빙
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
 
-REQUESTS_FILE = "public/requests.json"
+REQUESTS_FILE = "public/requests.json"  # Render에서 사용할 경로
 
 class HelpRequest(BaseModel):
     lat: float
