@@ -8,10 +8,35 @@
     html, body, #map {
       height: 100%; margin: 0; padding: 0;
     }
+    #list {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: rgba(255, 255, 255, 0.7);
+      padding: 10px;
+      max-width: 300px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 10;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .request-item {
+      cursor: pointer;
+      margin-bottom: 5px;
+      border: 1px solid #ccc;
+      padding: 5px;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+    }
+    .request-item:hover {
+      background-color: #f0f0f0;
+    }
   </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="list"></div>
 
 <script>
   const map = new kakao.maps.Map(document.getElementById('map'), {
@@ -19,25 +44,46 @@
     level: 8
   });
 
-  fetch("/requests.json")
+  // 렌더 서버에서 구조 요청 데이터를 가져옴
+  fetch("https://gangneung-lifesaver-api.onrender.com/requests")  // 여기서 데이터를 가져옴
     .then(res => res.json())
     .then(data => {
-      data.forEach(req => {
-        const pos = new kakao.maps.LatLng(req.lat, req.lon);
+      const sortedData = data.sort((a, b) => b.timestamp - a.timestamp); // 최신순 정렬
+      const listContainer = document.getElementById('list');
+      sortedData.forEach((req, index) => {
+        const pos = new kakao.maps.LatLng(req.lat, req.lng);  // lon -> lng로 수정
+
+        // 마커 생성
         const marker = new kakao.maps.Marker({
           position: pos,
           map: map,
           title: "구조 요청 위치"
         });
 
+        // 인포윈도우 내용
         const date = new Date(req.timestamp);
         const infoWindow = new kakao.maps.InfoWindow({
           content: `<div style="padding:6px; font-size:13px;">구조 요청<br>${date.toLocaleString()}</div>`
         });
 
+        // 마커 클릭 시 인포윈도우 표시
         kakao.maps.event.addListener(marker, 'click', function() {
           infoWindow.open(map, marker);
         });
+
+        // 리스트 항목 추가
+        const requestItem = document.createElement('div');
+        requestItem.className = 'request-item';
+        requestItem.innerHTML = `요청 위치 #${index + 1} (${req.lat.toFixed(6)}, ${req.lng.toFixed(6)})<br>시간: ${date.toLocaleString()}`;
+
+        // 리스트 항목 클릭 시 해당 위치로 이동
+        requestItem.addEventListener('click', function() {
+          map.setCenter(pos);
+          map.setLevel(5); // 확대 레벨
+          infoWindow.open(map, marker); // 클릭한 위치에 인포윈도우 표시
+        });
+
+        listContainer.appendChild(requestItem);
       });
     })
     .catch(err => {
