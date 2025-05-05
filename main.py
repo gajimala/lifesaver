@@ -28,10 +28,9 @@ class HelpRequest(BaseModel):
     lon: float
     timestamp: float  # ms
 
-@app.get("/request-help")
-def request_help(lat: float, lon: float, timestamp: float):
+@app.post("/request-help")
+def request_help(data: HelpRequest):
     try:
-        # 요청 데이터 처리 (POST 대신 GET으로 처리)
         if not os.path.exists(REQUESTS_FILE):
             with open(REQUESTS_FILE, "w", encoding="utf-8") as f:
                 json.dump([], f)
@@ -44,10 +43,8 @@ def request_help(lat: float, lon: float, timestamp: float):
             r for r in requests if now - r.get("timestamp", 0) < 86400000
         ]
 
-        # 새 요청 추가
-        recent_requests.append({"lat": lat, "lon": lon, "timestamp": timestamp})
+        recent_requests.append(data.dict())
 
-        # 파일에 저장
         with open(REQUESTS_FILE, "w", encoding="utf-8") as f:
             json.dump(recent_requests, f, ensure_ascii=False, indent=2)
 
@@ -63,7 +60,6 @@ def get_lifesavers():
         with open(lifesavers_file_path, encoding="utf-8") as f:
             data = json.load(f)
 
-        # lon을 lng로 바꾸는 작업
         for item in data:
             if "lon" in item:
                 item["lng"] = item.pop("lon")
@@ -74,7 +70,6 @@ def get_lifesavers():
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
-    # 포트 번호를 환경 변수에서 가져오거나 기본값 8000으로 설정
     port = int(os.getenv("PORT", 8000))  # 환경 변수 PORT가 없으면 8000 포트로 설정
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
