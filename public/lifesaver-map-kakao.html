@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -58,6 +59,7 @@
   var myLocationMarker = null;
   var infoWindow = new kakao.maps.InfoWindow();
   var watchId = null;
+  var hasCentered = false;
 
   map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
@@ -80,6 +82,13 @@
             )
           });
         }
+
+        if (!hasCentered) {
+          map.setCenter(myLocation);
+          map.setLevel(5);
+          hasCentered = true;
+        }
+
       }, function(error) {
         console.error("위치 추적 실패:", error);
       }, {
@@ -182,7 +191,9 @@
   // 🚨 구조 요청 버튼 기능
   document.getElementById('sosButton').addEventListener('click', function () {
     if (myLat && myLon) {
-      const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
+      const agree = confirm("[위치정보 제공 동의]
+구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.
+계속하시겠습니까?");
       if (!agree) return;
 
       fetch("https://gangneung-lifesaver-api.onrender.com/request-help", {
