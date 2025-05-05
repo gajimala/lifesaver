@@ -63,7 +63,7 @@
         // 인포윈도우 내용
         const date = new Date(req.timestamp);
         const infoWindow = new kakao.maps.InfoWindow({
-          content: `<div style="padding:6px; font-size:13px;">구조 요청<br>${date.toLocaleString()}</div>`
+          content: `<div style="padding:6px; font-size:13px;">구조 요청<br>위치: (${req.lat.toFixed(6)}, ${req.lng.toFixed(6)})<br>시간: ${date.toLocaleString()}</div>`
         });
 
         // 마커 클릭 시 인포윈도우 표시
