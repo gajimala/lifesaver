@@ -7,7 +7,6 @@
   <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=y6akfogygp"></script>
   <style>
     html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
-    
     /* 버튼들의 부모 요소(맵)에 relative 위치 지정 */
     #map {
       position: relative;
@@ -74,6 +73,21 @@
 <button id="sosButton">🚨 구조 요청</button>
 
 <script>
+  // 위치정보 제공을 위한 팝업을 띄우는 코드
+  window.onload = function() {
+    if (navigator.geolocation) {
+      // 위치정보 제공을 요청하는 코드
+      navigator.geolocation.getCurrentPosition(function(position) {
+        console.log("위치 제공 수락됨", position.coords.latitude, position.coords.longitude);
+      }, function(error) {
+        console.error("위치 제공 거부됨:", error);
+        alert("위치 정보 제공을 허용해야 합니다.");
+      });
+    } else {
+      alert("위치 정보 제공을 지원하지 않는 브라우저입니다.");
+    }
+  };
+
   var map = new naver.maps.Map('map', {
     center: new naver.maps.LatLng(37.5665, 126.9780),
     zoom: 17,
@@ -153,16 +167,16 @@
               }
 
               var appname = 'com.example.app';
-              var nmapUrl = nmap://route/car?slat=${myLat}&slng=${myLon}&dlat=${item.lat}&dlng=${item.lng}&appname=${appname};
+              var nmapUrl = `nmap://route/car?slat=${myLat}&slng=${myLon}&dlat=${item.lat}&dlng=${item.lng}&appname=${appname}`;
 
-              var iwContent = 
+              var iwContent = `
                 <div style="padding:6px; font-size:13px;">
                   ${item.name || "인명구조함"}<br>
                   <button onclick="window.location.href='${nmapUrl}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
                     길찾기 (네이버앱)
                   </button>
                 </div>
-              ;
+              `;
 
               infoWindow.setContent(iwContent);
               infoWindow.open(map, marker);
