@@ -55,7 +55,7 @@
 <button id="sosButton">🚨 구조 요청</button>
 
 <script>
-  var map = new kakao.maps.Map(document.getElementById('map'), {
+  const map = new kakao.maps.Map(document.getElementById('map'), {
     center: new kakao.maps.LatLng(37.75, 128.9),  // 초기 지도 중심 (예: 강원도)
     level: 5  // 초기 확대 레벨 (넓게 보이는 상태)
   });
@@ -63,35 +63,22 @@
   var markers = [];
   var lifesavers = [];
   var myLat = null;
-  var myLon = null;
+  var myLng = null;  // lon을 lng로 수정
   var myLocationMarker = null;
   var infoWindow = new kakao.maps.InfoWindow();
   var watchId = null;
 
-  // 위치 제공 허용 팝업을 표시
-  window.onload = function() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        console.log("위치 제공 수락됨", position.coords.latitude, position.coords.longitude);
-        // 위치 정보가 수락되면 추적을 시작
-        startTracking();
-      }, function(error) {
-        console.error("위치 제공 거부됨:", error);
-        alert("위치 정보 제공을 허용해야 합니다.");
-      });
-    } else {
-      alert("위치 정보 제공을 지원하지 않는 브라우저입니다.");
-    }
-  };
+  // 지도 타입 설정
+  map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
-  // 위치 추적 시작
   function startTracking() {
     if (navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition(function(position) {
         myLat = position.coords.latitude;
-        myLon = position.coords.longitude;
-        var myLocation = new kakao.maps.LatLng(myLat, myLon);
+        myLng = position.coords.longitude;  // lon을 lng로 수정
+        var myLocation = new kakao.maps.LatLng(myLat, myLng);
 
+        // 내 위치 마커가 있으면 위치 업데이트, 없으면 새로 추가
         if (myLocationMarker) {
           myLocationMarker.setPosition(myLocation);
         } else {
@@ -119,40 +106,42 @@
     }
   }
 
-  // 마커 및 구조함 정보 로드
   function loadMarkers() {
     fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
       .then(res => res.json())
       .then(data => {
         lifesavers = data;
-        data.forEach(function(item) {
-          if (item.lat && item.lng) {
-            var marker = new kakao.maps.Marker({
-              position: new kakao.maps.LatLng(item.lat, item.lng),
-              title: item.name || "인명구조함",
-              image: new kakao.maps.MarkerImage(
-                "/lifesaver-icon.png",
-                new kakao.maps.Size(40, 45),
-                { offset: new kakao.maps.Point(20, 45) }
-              )
-            });
-            markers.push(marker);
 
-            kakao.maps.event.addListener(marker, 'click', function() {
-              var url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
-              var iwContent = `
-                <div style="padding:6px; font-size:13px;">
-                  인명구조함<br>
-                  <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
-                    길찾기
-                  </button>
-                </div>
-              `;
-              infoWindow.setContent(iwContent);
-              infoWindow.open(map, marker);
-            });
-          }
-        });
+        for (var i = 0; i < lifesavers.length; i++) {
+          (function(item) {
+            if (item.lat && item.lng) {
+              var marker = new kakao.maps.Marker({
+                position: new kakao.maps.LatLng(item.lat, item.lng),
+                title: item.name || "인명구조함",
+                image: new kakao.maps.MarkerImage(
+                  "/lifesaver-icon.png",
+                  new kakao.maps.Size(40, 45),
+                  { offset: new kakao.maps.Point(20, 45) }
+                )
+              });
+              markers.push(marker);
+
+              kakao.maps.event.addListener(marker, 'click', function() {
+                var url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
+                var iwContent = `
+                  <div style="padding:6px; font-size:13px;">
+                    인명구조함<br>
+                    <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
+                      길찾기
+                    </button>
+                  </div>
+                `;
+                infoWindow.setContent(iwContent);
+                infoWindow.open(map, marker);
+              });
+            }
+          })(lifesavers[i]);
+        }
 
         updateMarkers();
       })
@@ -161,7 +150,6 @@
       });
   }
 
-  // 마커 업데이트
   function updateMarkers() {
     if (markers.length === 0) return;
 
@@ -185,11 +173,12 @@
 
   kakao.maps.event.addListener(map, 'bounds_changed', updateMarkers);
 
+  startTracking();
   loadMarkers();
 
   document.getElementById('locationButton').addEventListener('click', function() {
-    if (myLat && myLon) {
-      const center = new kakao.maps.LatLng(myLat, myLon);
+    if (myLat && myLng) {
+      const center = new kakao.maps.LatLng(myLat, myLng);
       map.setCenter(center);
       map.setLevel(5);  // 확대 레벨 설정
     }
@@ -206,7 +195,7 @@
   });
 
   document.getElementById('sosButton').addEventListener('click', function() {
-    if (myLat && myLon) {
+    if (myLat && myLng) {
       const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
       if (!agree) return;
 
@@ -215,7 +204,7 @@
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ lat: myLat, lng: myLon, timestamp: Date.now() })
+        body: JSON.stringify({ lat: myLat, lng: myLng, timestamp: Date.now() })
       })
       .then(res => {
         if (res.ok) {
