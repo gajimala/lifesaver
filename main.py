@@ -4,8 +4,19 @@ import time
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
+# FastAPI 애플리케이션 설정
 app = FastAPI()
+
+# CORS 설정 (모든 도메인에서 접근 가능)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 모든 도메인에서 요청을 허용
+    allow_credentials=True,
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용
+    allow_headers=["*"],  # 모든 헤더 허용
+)
 
 # 정적 파일 서빙
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
@@ -27,7 +38,7 @@ def request_help(data: HelpRequest):
         with open(REQUESTS_FILE, "r", encoding="utf-8") as f:
             requests = json.load(f)
 
-        now = time.time() * 1000
+        now = time.time() * 1000  # 현재 시간을 ms로 계산
         recent_requests = [
             r for r in requests if now - r.get("timestamp", 0) < 86400000
         ]
@@ -45,7 +56,8 @@ def request_help(data: HelpRequest):
 @app.get("/lifesavers")
 def get_lifesavers():
     try:
-        with open("public/lifesavers.json", encoding="utf-8") as f:
+        lifesavers_file_path = os.path.join("public", "lifesavers.json")
+        with open(lifesavers_file_path, encoding="utf-8") as f:
             data = json.load(f)
 
         for item in data:
@@ -53,5 +65,11 @@ def get_lifesavers():
                 item["lng"] = item.pop("lon")
 
         return data
+
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))  # 환경 변수 PORT가 없으면 8000 포트로 설정
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
