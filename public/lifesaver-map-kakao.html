@@ -12,35 +12,23 @@
       left: 10px;
       z-index: 100;
       padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.9);
       border: 1px solid #ccc;
       border-radius: 4px;
       font-size: 14px;
       cursor: pointer;
     }
-    #locationButton, #mapTypeSelector {
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-    }
-    #sosButton {
-      background: #ffdddd;
-      color: red;
-      font-weight: bold;
-    }
-    #locationButton:hover, #mapTypeSelector:hover {
+    #locationButton:hover, #mapTypeSelector:hover, #sosButton:hover {
       background: rgba(240, 240, 240, 0.9);
-    }
-    #sosButton:hover {
-      background: #ffe0e0;
     }
     #locationButton { top: 10px; }
     #mapTypeSelector { top: 50px; }
-    #sosButton { top: 90px; }
+    #sosButton { top: 90px; background: #ffdddd; color: red; font-weight: bold; }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
-
 <button id="locationButton">내 위치로 이동</button>
 <button id="mapTypeSelector">항공뷰</button>
 <button id="sosButton">🚨 구조 요청</button>
@@ -179,16 +167,18 @@
     }
   });
 
-  // 🚨 구조 요청 버튼 기능 (GET 요청으로 변경)
+  // 🚨 구조 요청 버튼 기능
   document.getElementById('sosButton').addEventListener('click', function () {
     if (myLat && myLon) {
       const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
       if (!agree) return;
 
-      const url = `https://kcg-lifesaver.koyeb.app/request-help?lat=${myLat}&lon=${myLon}&timestamp=${Date.now()}`;
-
-      fetch(url, {  // GET 요청
-        method: "GET"
+      fetch("https://kcg-lifesaver.koyeb.app/request-help", {
+        method: "GET",  // POST에서 GET으로 수정
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ lat: myLat, lon: myLon, timestamp: Date.now() })
       })
       .then(res => {
         if (res.ok) {
