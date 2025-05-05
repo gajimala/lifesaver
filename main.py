@@ -23,7 +23,7 @@ async def connect_db():
 # 데이터 모델 정의
 class HelpRequest(BaseModel):
     lat: float
-    lon: float
+    lng: float
     timestamp: float  # ms
 
 @app.post("/request-help")
@@ -35,7 +35,7 @@ async def request_help(data: HelpRequest):
         await conn.execute("""
             INSERT INTO requests(lat, lon, timestamp)
             VALUES($1, $2, $3)
-        """, data.lat, data.lon, data.timestamp)
+        """, data.lat, data.lng, data.timestamp)
 
         await conn.close()
         return {"status": "ok", "message": "Request processed successfully"}
