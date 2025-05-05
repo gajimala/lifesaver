@@ -179,18 +179,16 @@
     }
   });
 
-  // 🚨 구조 요청 버튼 기능
+  // 🚨 구조 요청 버튼 기능 (GET 요청으로 변경)
   document.getElementById('sosButton').addEventListener('click', function () {
     if (myLat && myLon) {
       const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
       if (!agree) return;
 
-      fetch("https://kcg-lifesaver.koyeb.app/request-help", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ lat: myLat, lon: myLon, timestamp: Date.now() })
+      const url = `https://kcg-lifesaver.koyeb.app/request-help?lat=${myLat}&lon=${myLon}&timestamp=${Date.now()}`;
+
+      fetch(url, {  // GET 요청
+        method: "GET"
       })
       .then(res => {
         if (res.ok) {
