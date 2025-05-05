@@ -71,6 +71,28 @@
   // 지도 타입 설정
   map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
 
+  // 위치 권한 요청 함수
+  function requestGeolocationPermission() {
+    if (!navigator.geolocation) {
+      alert("이 브라우저는 위치 추적을 지원하지 않습니다.");
+      return;
+    }
+
+    navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
+      if (result.state === 'granted') {
+        startTracking();  // 바로 추적 시작
+      } else if (result.state === 'prompt') {
+        navigator.geolocation.getCurrentPosition(
+          () => startTracking(),  // 사용자가 허용했을 때
+          (err) => alert("위치 권한이 필요합니다: " + err.message)
+        );
+      } else {
+        alert("위치 권한이 차단되어 있어 기능을 사용할 수 없습니다.");
+      }
+    });
+  }
+
+  // 위치 추적 시작 함수
   function startTracking() {
     if (navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition(function(position) {
@@ -173,7 +195,7 @@
 
   kakao.maps.event.addListener(map, 'bounds_changed', updateMarkers);
 
-  startTracking();
+  requestGeolocationPermission();
   loadMarkers();
 
   document.getElementById('locationButton').addEventListener('click', function() {
