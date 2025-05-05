@@ -1,9 +1,9 @@
 import json
-import os
 import time
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
+import os
 
 app = FastAPI()
 
