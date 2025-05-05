@@ -11,7 +11,7 @@ app = FastAPI()
 # GitHub API와 연결할 정보
 repo_owner = "gajimala"  # GitHub 사용자명
 repo_name = "lifesaver"  # GitHub 리포지토리명
-token = os.getenv("GITHUB_TOKEN")  # 환경변수에서 GitHub Personal Access Token 가져오기
+token = os.getenv("MY_TOKEN")  # 환경변수에서 GitHub Personal Access Token 가져오기
 
 if not token:
     raise Exception("GitHub token is not set. Please set the GITHUB_TOKEN environment variable.")
