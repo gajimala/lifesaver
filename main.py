@@ -41,24 +41,4 @@ def request_help(data: HelpRequest):
         return {"status": "ok", "count": len(recent_requests)}
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-@app.get("/lifesavers")
-def get_lifesavers():
-    try:
-        lifesavers_file_path = os.path.join("public", "lifesavers.json")
-        with open(lifesavers_file_path, encoding="utf-8") as f:
-            data = json.load(f)
-
-        for item in data:
-            if "lon" in item:
-                item["lng"] = item.pop("lon")
-
-        return data
-
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8080))  # 환경 변수 PORT가 없으면 8080으로 설정
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+        return
