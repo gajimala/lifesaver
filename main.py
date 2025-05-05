@@ -1,21 +1,19 @@
 import json
-import os
 import time
 from fastapi import FastAPI
 from pydantic import BaseModel
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-# 정적 파일 서빙
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
-
+# 요청 기록 파일 경로 설정
 REQUESTS_FILE = "public/requests.json"
 
+# 데이터 모델 정의
 class HelpRequest(BaseModel):
     lat: float
     lon: float
-    timestamp: float  # ms
+    timestamp: float  # 밀리초로 타임스탬프
 
 @app.post("/request-help")
 def request_help(data: HelpRequest):
@@ -55,20 +53,5 @@ def get_requests():
             requests = json.load(f)
 
         return requests
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-@app.get("/lifesavers")
-def get_lifesavers():
-    try:
-        with open("public/lifesavers.json", encoding="utf-8") as f:
-            data = json.load(f)
-
-        # lon -> lng로 수정
-        for item in data:
-            if "lon" in item:
-                item["lng"] = item.pop("lon")
-
-        return data
     except Exception as e:
         return {"status": "error", "message": str(e)}
