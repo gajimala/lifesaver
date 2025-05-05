@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>인명구조함 지도 (네이버)</title>
-  <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=y6akfogygp"></script>
+  <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=y6akfogygp"></script>
   <style>
     html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
+
     #sosButton {
       position: absolute;
       top: 10px;
@@ -19,42 +20,109 @@
       cursor: pointer;
       font-weight: bold;
     }
+
+    #sirenMarker {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 32px;
+      height: 32px;
+      z-index: 1000;
+      animation: blink 1s infinite;
+      display: none;
+    }
+
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <div id="sosButton">구조 요청</div>
+  <img id="sirenMarker" src="https://cdn-icons-png.flaticon.com/512/565/565547.png" alt="경고" />
 
   <script>
-    const map = new naver.maps.Map('map', {
-      center: new naver.maps.LatLng(37.5665, 126.9780),
-      zoom: 12
-    });
+    let map;
+    let myMarker;
 
-    // 구조 요청 기능
-    document.getElementById('sosButton').addEventListener('click', () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          const myLat = pos.coords.latitude;
-          const myLng = pos.coords.longitude;
+    function initMap(lat, lng) {
+      const center = new naver.maps.LatLng(lat, lng);
 
-          fetch("https://gangneung-lifesaver-api.onrender.com/request-help", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ lat: myLat, lng: myLng, timestamp: Date.now() })
-          })
-          .then(res => {
-            if (res.ok) {
-              alert("구조 요청이 접수되었습니다.");
-            } else {
-              alert("전송 실패: 서버 오류가 발생했습니다.");
-            }
-          })
-          .catch(() => alert("전송 실패: 네트워크 오류가 발생했습니다."));
+      map = new naver.maps.Map('map', {
+        center: center,
+        zoom: 14
+      });
+
+      // 내 위치 마커
+      myMarker = new naver.maps.Marker({
+        position: center,
+        map: map,
+        icon: {
+          content: '<div style="width: 14px; height: 14px; background: blue; border-radius: 50%;"></div>',
+          anchor: new naver.maps.Point(7, 7)
+        }
+      });
+
+      // lifesavers 마커
+      fetch("https://gangneung-lifesaver-api.onrender.com/lifesavers")
+        .then(res => res.json())
+        .then(data => {
+          data.forEach(item => {
+            new naver.maps.Marker({
+              position: new naver.maps.LatLng(item.lat, item.lng),
+              map: map,
+              title: item.name || "인명구조함"
+            });
+          });
         });
-      } else {
-        alert("GPS를 지원하지 않는 브라우저입니다.");
+
+      // 위치 추적
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(pos => {
+          const newLat = pos.coords.latitude;
+          const newLng = pos.coords.longitude;
+
+          const newPosition = new naver.maps.LatLng(newLat, newLng);
+          myMarker.setPosition(newPosition);
+        });
       }
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        initMap(pos.coords.latitude, pos.coords.longitude);
+      }, () => {
+        alert("위치 정보를 가져오지 못했습니다.");
+        initMap(37.5665, 126.9780); // fallback
+      });
+    } else {
+      alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
+      initMap(37.5665, 126.9780);
+    }
+
+    document.getElementById('sosButton').addEventListener('click', () => {
+      if (!myMarker) return;
+
+      const lat = myMarker.getPosition().y;
+      const lng = myMarker.getPosition().x;
+
+      fetch("https://gangneung-lifesaver-api.onrender.com/request-help", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lon: lng, timestamp: Date.now() })
+      })
+      .then(res => {
+        if (res.ok) {
+          alert("구조 요청이 접수되었습니다.");
+          document.getElementById("sirenMarker").style.display = "block";
+        } else {
+          alert("전송 실패: 서버 오류가 발생했습니다.");
+        }
+      })
+      .catch(() => alert("전송 실패: 네트워크 오류가 발생했습니다."));
     });
   </script>
 </body>
