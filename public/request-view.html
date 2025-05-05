@@ -55,7 +55,7 @@
       const requestsList = document.getElementById('requestsList');
 
       data.forEach((req, index) => {
-        const pos = new kakao.maps.LatLng(req.lat, req.lon);
+        const pos = new kakao.maps.LatLng(req.lat, req.lng);
         const marker = new kakao.maps.Marker({
           position: pos,
           map: map,
@@ -63,11 +63,11 @@
         });
 
         const latDMS = decimalToDMS(req.lat);  // 위도를 도분초로 변환
-        const lonDMS = decimalToDMS(req.lon);  // 경도를 도분초로 변환
+        const lngDMS = decimalToDMS(req.lng);  // 경도를 도분초로 변환
         const date = new Date(req.timestamp);
 
         const infoWindow = new kakao.maps.InfoWindow({
-          content: `<div style="padding:6px; font-size:13px;">구조 요청<br>${date.toLocaleString()}<br>위도: ${latDMS}<br>경도: ${lonDMS}</div>`
+          content: `<div style="padding:6px; font-size:13px;">구조 요청<br>${date.toLocaleString()}<br>위도: ${latDMS}<br>경도: ${lngDMS}</div>`
         });
 
         // 마커 클릭 시 정보창 표시
@@ -77,7 +77,7 @@
 
         // 요청 리스트 표시
         const listItem = document.createElement('div');
-        listItem.innerHTML = `구조 요청 (${date.toLocaleString()})<br>위도: ${latDMS}, 경도: ${lonDMS}`;
+        listItem.innerHTML = `구조 요청 (${date.toLocaleString()})<br>위도: ${latDMS}, 경도: ${lngDMS}`;
         listItem.addEventListener('click', function() {
           map.setCenter(pos);  // 클릭 시 해당 위치로 지도 이동
         });
