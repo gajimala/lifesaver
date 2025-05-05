@@ -60,5 +60,5 @@ def get_lifesavers():
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8080))  # os.environ.get() 대신 os.getenv() 사용
+    port = int(os.getenv("PORT", 8080))  # 환경 변수 PORT가 없으면 8080으로 설정
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
