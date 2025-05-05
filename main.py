@@ -96,3 +96,4 @@ def get_lifesavers():
         return data
     except Exception as e:
         return {"status": "error", "message": str(e)}
+ 
