@@ -153,16 +153,16 @@
               }
 
               var appname = 'com.example.app';
-              var nmapUrl = `nmap://route/car?slat=${myLat}&slng=${myLon}&dlat=${item.lat}&dlng=${item.lng}&appname=${appname}`;
+              var nmapUrl = nmap://route/car?slat=${myLat}&slng=${myLon}&dlat=${item.lat}&dlng=${item.lng}&appname=${appname};
 
-              var iwContent = `
+              var iwContent = 
                 <div style="padding:6px; font-size:13px;">
                   ${item.name || "인명구조함"}<br>
                   <button onclick="window.location.href='${nmapUrl}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
                     길찾기 (네이버앱)
                   </button>
                 </div>
-              `;
+              ;
 
               infoWindow.setContent(iwContent);
               infoWindow.open(map, marker);
