@@ -7,8 +7,6 @@ import asyncpg  # PostgreSQL 연결을 위한 라이브러리
 
 app = FastAPI()
 
-# 정적 파일 서빙
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
 
 # PostgreSQL 데이터베이스 연결 함수
 async def connect_db():
@@ -66,6 +64,8 @@ async def get_lifesavers():
             if "lon" in item:
                 item["lng"] = item.pop("lon")
 
+# 정적 파일 서빙
+app.mount("/", StaticFiles(directory="public", html=True), name="static")
         return data
     except Exception as e:
         return {"status": "error", "message": str(e)}
