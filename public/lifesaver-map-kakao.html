@@ -1,200 +1,60 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>인명구조함 지도 (카카오)</title>
   <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d02572eca2dd38bbbbb6692254d51bb7&libraries=clusterer"></script>
   <style>
     html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; }
-    #locationButton, #mapTypeSelector, #sosButton {
+    #sosButton {
       position: absolute;
+      top: 10px;
       left: 10px;
-      z-index: 100;
-      padding: 6px 10px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 14px;
+      z-index: 999;
+      background: red;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 5px;
       cursor: pointer;
+      font-weight: bold;
     }
-    #locationButton:hover, #mapTypeSelector:hover, #sosButton:hover {
-      background: rgba(240, 240, 240, 0.9);
-    }
-    #locationButton { top: 10px; }
-    #mapTypeSelector { top: 50px; }
-    #sosButton { top: 90px; background: #ffdddd; color: red; font-weight: bold; }
   </style>
 </head>
 <body>
+  <div id="map"></div>
+  <div id="sosButton">구조 요청</div>
 
-<div id="map"></div>
-<button id="locationButton">내 위치로 이동</button>
-<button id="mapTypeSelector">항공뷰</button>
-<button id="sosButton">🚨 구조 요청</button>
+  <script>
+    const map = new kakao.maps.Map(document.getElementById('map'), {
+      center: new kakao.maps.LatLng(37.5665, 126.9780),
+      level: 5
+    });
 
-<script>
-  const map = new kakao.maps.Map(document.getElementById('map'), {
-    center: new kakao.maps.LatLng(37.75, 128.9),
-    level: 9
-  });
+    document.getElementById('sosButton').addEventListener('click', () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const myLat = pos.coords.latitude;
+          const myLng = pos.coords.longitude;
 
-  var markers = [];
-  var lifesavers = [];
-  var myLat = null;
-  var myLon = null;
-  var myLocationMarker = null;
-  var infoWindow = new kakao.maps.InfoWindow();
-  var watchId = null;
-
-  map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
-
-  function startTracking() {
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(function(position) {
-        myLat = position.coords.latitude;
-        myLon = position.coords.longitude;
-        var myLocation = new kakao.maps.LatLng(myLat, myLon);
-
-        if (myLocationMarker) {
-          myLocationMarker.setPosition(myLocation);
-        } else {
-          myLocationMarker = new kakao.maps.Marker({
-            position: myLocation,
-            map: map,
-            image: new kakao.maps.MarkerImage(
-              'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
-              new kakao.maps.Size(24, 35)
-            )
-          });
-        }
-      }, function(error) {
-        console.error("위치 추적 실패:", error);
-      }, {
-        enableHighAccuracy: true,
-        maximumAge: 0
-      });
-    } else {
-      console.error("Geolocation 미지원");
-    }
-  }
-
-  function loadMarkers() {
-    fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
-      .then(res => res.json())
-      .then(data => {
-        lifesavers = data;
-
-        for (var i = 0; i < lifesavers.length; i++) {
-          (function(item) {
-            if (item.lat && item.lng) {
-              var marker = new kakao.maps.Marker({
-                position: new kakao.maps.LatLng(item.lat, item.lng),
-                title: item.name || "인명구조함",
-                image: new kakao.maps.MarkerImage(
-                  "/lifesaver-icon.png",
-                  new kakao.maps.Size(40, 45),
-                  { offset: new kakao.maps.Point(20, 45) }
-                )
-              });
-              markers.push(marker);
-
-              kakao.maps.event.addListener(marker, 'click', function() {
-                var url = `https://map.kakao.com/link/to/인명구조함,${item.lat},${item.lng}`;
-                var iwContent = `
-                  <div style="padding:6px; font-size:13px;">
-                    인명구조함<br>
-                    <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
-                      길찾기
-                    </button>
-                  </div>
-                `;
-                infoWindow.setContent(iwContent);
-                infoWindow.open(map, marker);
-              });
+          fetch("https://gangneung-lifesaver-api.onrender.com/request-help", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lat: myLat, lng: myLng, timestamp: Date.now() })
+          })
+          .then(res => {
+            if (res.ok) {
+              alert("구조 요청이 접수되었습니다.");
+            } else {
+              alert("전송 실패: 서버 오류가 발생했습니다.");
             }
-          })(lifesavers[i]);
-        }
-
-        updateMarkers();
-      })
-      .catch(error => {
-        console.error('lifesavers.json 불러오기 오류:', error);
-      });
-  }
-
-  function updateMarkers() {
-    if (markers.length === 0) return;
-
-    var bounds = map.getBounds();
-    var sw = bounds.getSouthWest();
-    var ne = bounds.getNorthEast();
-
-    markers.forEach(function(marker) {
-      var pos = marker.getPosition();
-      var lat = pos.getLat();
-      var lng = pos.getLng();
-
-      if (lat >= sw.getLat() && lat <= ne.getLat() &&
-          lng >= sw.getLng() && lng <= ne.getLng()) {
-        marker.setMap(map);
+          })
+          .catch(() => alert("전송 실패: 네트워크 오류가 발생했습니다."));
+        });
       } else {
-        marker.setMap(null);
+        alert("GPS를 지원하지 않는 브라우저입니다.");
       }
     });
-  }
-
-  kakao.maps.event.addListener(map, 'bounds_changed', updateMarkers);
-
-  startTracking();
-  loadMarkers();
-
-  document.getElementById('locationButton').addEventListener('click', function() {
-    if (myLat && myLon) {
-      const center = new kakao.maps.LatLng(myLat, myLon);
-      map.setCenter(center);
-      map.setLevel(5);
-    }
-  });
-
-  document.getElementById('mapTypeSelector').addEventListener('click', function() {
-    if (map.getMapTypeId() === kakao.maps.MapTypeId.SKYVIEW) {
-      map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
-      this.textContent = '항공뷰';
-    } else {
-      map.setMapTypeId(kakao.maps.MapTypeId.SKYVIEW);
-      this.textContent = '일반 지도';
-    }
-  });
-
-  // 🚨 구조 요청 버튼 기능
-  document.getElementById('sosButton').addEventListener('click', function () {
-    if (myLat && myLon) {
-      const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
-      if (!agree) return;
-
-      fetch("https://kcg-lifesaver.koyeb.app/request-help", {
-        method: "GET",  // POST에서 GET으로 수정
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ lat: myLat, lon: myLon, timestamp: Date.now() })
-      })
-      .then(res => {
-        if (res.ok) {
-          alert("구조 요청이 접수되었습니다.");
-        } else {
-          alert("전송 실패: 서버 오류가 발생했습니다.");
-        }
-      })
-      .catch(() => {
-        alert("전송 실패: 네트워크 오류가 발생했습니다.");
-      });
-    } else {
-      alert("현재 위치를 감지할 수 없습니다.");
-    }
-  });
-</script>
-
+  </script>
 </body>
 </html>
