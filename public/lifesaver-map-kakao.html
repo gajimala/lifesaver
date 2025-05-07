@@ -1,165 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>구조 요청 확인</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d02572eca2dd38bbbbb6692254d51bb7"></script>
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
+    #requestsList {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 13px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    #requestsList div {
+      margin-bottom: 5px;
+      padding: 6px;
+      background: #f2f2f2;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #requestsList div:hover {
+      background: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="requestsList">요청 데이터를 불러오는 중입니다...</div>
+
 <script>
   const map = new kakao.maps.Map(document.getElementById('map'), {
-    center: new kakao.maps.LatLng(37.75, 128.9),
-    level: 5
+    center: new kakao.maps.LatLng(37.5665, 126.9780),
+    level: 8
   });
 
-  var markers = [];
-  var lifesavers = [];
-  var myLat = null;
-  var myLng = null;
-  var myLocationMarker = null;
-  var infoWindow = new kakao.maps.InfoWindow();
-  var firstCentered = false; // 최초 1회만 중심 이동
+  const bounds = new kakao.maps.LatLngBounds();
 
-  map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
+  // 도분초 변환
+  function decimalToDMS(degrees) {
+    const d = Math.floor(degrees);
+    const minFloat = (degrees - d) * 60;
+    const m = Math.floor(minFloat);
+    const s = ((minFloat - m) * 60).toFixed(2);
+    return `${d}° ${m}' ${s}"`;
+  }
 
-  // 내 위치 추적 (1회 + 이후 위치만 업데이트, 지도 중심은 유지)
-  if (navigator.geolocation) {
-    navigator.geolocation.watchPosition(function(position) {
-      myLat = position.coords.latitude;
-      myLng = position.coords.longitude;
+  fetch("https://gangneung-lifesaver-api.onrender.com/requests")
+    .then(res => res.json())
+    .then(data => {
+      const listContainer = document.getElementById('requestsList');
+      listContainer.innerHTML = '';
 
-      const myLocation = new kakao.maps.LatLng(myLat, myLng);
+      data.forEach((req, index) => {
+        const lat = req.lat;
+        const lng = req.lng || req.lon;
+        if (!lat || !lng) return;
 
-      if (myLocationMarker) {
-        myLocationMarker.setPosition(myLocation);
-      } else {
-        myLocationMarker = new kakao.maps.Marker({
-          position: myLocation,
+        const pos = new kakao.maps.LatLng(lat, lng);
+        bounds.extend(pos);
+
+        const marker = new kakao.maps.Marker({
+          position: pos,
           map: map,
-          image: new kakao.maps.MarkerImage(
-            'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
-            new kakao.maps.Size(24, 35)
-          )
+          title: "구조 요청 위치"
         });
-      }
 
-      // 최초 1회만 지도 중심 이동
-      if (!firstCentered) {
-        map.setCenter(myLocation);
-        map.setLevel(5);
-        firstCentered = true;
-      }
-    }, function(error) {
-      console.error("위치 추적 실패:", error);
-    }, {
-      enableHighAccuracy: true,
-      maximumAge: 0
-    });
-  }
+        const date = new Date(req.timestamp);
+        const latDMS = decimalToDMS(lat);
+        const lngDMS = decimalToDMS(lng);
 
-  function loadMarkers() {
-    fetch("https://kcg-lifesaver.koyeb.app/lifesavers.json")
-      .then(res => res.json())
-      .then(data => {
-        lifesavers = data;
-        for (var i = 0; i < lifesavers.length; i++) {
-          (function(item) {
-            const lat = item.lat;
-            const lng = item.lng || item.lon;
-            if (lat && lng) {
-              var marker = new kakao.maps.Marker({
-                position: new kakao.maps.LatLng(lat, lng),
-                title: item.name || "인명구조함",
-                image: new kakao.maps.MarkerImage(
-                  "/lifesaver-icon.png",
-                  new kakao.maps.Size(40, 45),
-                  { offset: new kakao.maps.Point(20, 45) }
-                )
-              });
-              markers.push(marker);
+        const infoWindow = new kakao.maps.InfoWindow({
+          content: `<div style="padding:6px; font-size:13px;">
+                      구조 요청<br>${date.toLocaleString()}<br>
+                      위도: ${latDMS}<br>경도: ${lngDMS}
+                    </div>`
+        });
 
-              kakao.maps.event.addListener(marker, 'click', function() {
-                var url = `https://map.kakao.com/link/to/인명구조함,${lat},${lng}`;
-                var iwContent = `
-                  <div style="padding:6px; font-size:13px;">
-                    인명구조함<br>
-                    <button onclick="window.location.href='${url}'" style="margin-top:5px; background:none; border:none; color:blue; text-decoration:underline; cursor:pointer;">
-                      길찾기
-                    </button>
-                  </div>
-                `;
-                infoWindow.setContent(iwContent);
-                infoWindow.open(map, marker);
-              });
-            }
-          })(lifesavers[i]);
-        }
-        updateMarkers();
-      })
-      .catch(error => {
-        console.error('lifesavers.json 불러오기 오류:', error);
+        kakao.maps.event.addListener(marker, 'click', () => {
+          infoWindow.open(map, marker);
+        });
+
+        const item = document.createElement('div');
+        item.innerHTML = `(${date.toLocaleTimeString()})<br>위도: ${latDMS}<br>경도: ${lngDMS}`;
+        item.onclick = () => {
+          map.panTo(pos);
+          infoWindow.open(map, marker);
+        };
+
+        listContainer.appendChild(item);
       });
-  }
 
-  function updateMarkers() {
-    if (markers.length === 0) return;
-
-    var bounds = map.getBounds();
-    var sw = bounds.getSouthWest();
-    var ne = bounds.getNorthEast();
-
-    markers.forEach(function(marker) {
-      var pos = marker.getPosition();
-      var lat = pos.getLat();
-      var lng = pos.getLng();
-
-      if (lat >= sw.getLat() && lat <= ne.getLat() &&
-          lng >= sw.getLng() && lng <= ne.getLng()) {
-        marker.setMap(map);
-      } else {
-        marker.setMap(null);
+      if (!bounds.isEmpty()) {
+        map.setBounds(bounds);
       }
+    })
+    .catch(err => {
+      console.error("요청 불러오기 실패:", err);
+      document.getElementById('requestsList').innerText = "요청 데이터를 불러올 수 없습니다.";
     });
-  }
-
-  kakao.maps.event.addListener(map, 'bounds_changed', updateMarkers);
-
-  loadMarkers();
-
-  document.getElementById('locationButton').addEventListener('click', function() {
-    if (myLat && myLng) {
-      const center = new kakao.maps.LatLng(myLat, myLng);
-      map.setCenter(center);
-      map.setLevel(5);
-    }
-  });
-
-  document.getElementById('mapTypeSelector').addEventListener('click', function() {
-    if (map.getMapTypeId() === kakao.maps.MapTypeId.SKYVIEW) {
-      map.setMapTypeId(kakao.maps.MapTypeId.NORMAL);
-      this.textContent = '항공뷰';
-    } else {
-      map.setMapTypeId(kakao.maps.MapTypeId.SKYVIEW);
-      this.textContent = '일반 지도';
-    }
-  });
-
-  document.getElementById('sosButton').addEventListener('click', function() {
-    if (myLat && myLng) {
-      const agree = confirm("[위치정보 제공 동의]\n구조 요청 시 현재 위치가 전송되며, 요청 정보는 24시간 뒤 자동 삭제됩니다.\n계속하시겠습니까?");
-      if (!agree) return;
-
-      fetch("https://gangneung-lifesaver-api.onrender.com/request-help", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ lat: myLat, lng: myLng, timestamp: Date.now() })
-      })
-      .then(res => {
-        if (res.ok) {
-          alert("구조 요청이 접수되었습니다.");
-        } else {
-          alert("전송 실패: 서버 오류가 발생했습니다.");
-        }
-      })
-      .catch(() => {
-        alert("전송 실패: 네트워크 오류가 발생했습니다.");
-      });
-    } else {
-      alert("현재 위치를 감지할 수 없습니다.");
-    }
-  });
 </script>
+</body>
+</html>
